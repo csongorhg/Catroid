@@ -308,7 +308,7 @@ pipeline {
                         stage('Custom task') {
                             steps {
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                                    sh './gradlew testCatroidDebugUnitTest --debug'
+                                    sh './gradlew testCatroidDebugUnitTest'
                                 }
                             }
                         
