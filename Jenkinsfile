@@ -289,6 +289,13 @@ pipeline {
                                 }
                             }
                         }
+                        stage('Devops workshop') {
+                            steps {
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                    sh '''./gradlew detekt'''
+                                }
+                            }
+                        }
                     }
                 }
 
