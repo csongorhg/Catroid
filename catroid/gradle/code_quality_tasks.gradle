@@ -24,9 +24,9 @@
 apply plugin: 'checkstyle'
 apply plugin: 'pmd'
 
-check.dependsOn 'checkstyle'
-check.dependsOn 'pmd'
-check.dependsOn 'detekt'
+// check.dependsOn 'checkstyle'
+// check.dependsOn 'pmd'
+// check.dependsOn 'detekt'
 
 dependencies {
     pmd 'net.sourceforge.pmd:pmd-core:6.55.0'
@@ -37,7 +37,7 @@ dependencies {
     detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.23.0"
 }
 
-task checkstyle(type: Checkstyle) {
+task checkstyle(type: Checkstyle, dependsOn: ['detekt', 'pmd']) {
     configDirectory = file(".")
     configFile = file("./config/checkstyle.xml")
     source '.'
