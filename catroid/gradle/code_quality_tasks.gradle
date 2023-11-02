@@ -38,7 +38,6 @@ dependencies {
 }
 
 task checkstyle(type: Checkstyle) {
-    mustRunAfter pmd
     configDirectory = file(".")
     configFile = file("./config/checkstyle.xml")
     source '.'
@@ -58,7 +57,6 @@ task checkstyle(type: Checkstyle) {
 }
 
 task pmd(type: Pmd) {
-    mustRunAfter detekt
     ruleSetFiles = files('config/pmd.xml')
     ruleSets = []
 
