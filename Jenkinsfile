@@ -105,6 +105,7 @@ pipeline {
 
     environment {
         ANDROID_VERSION = 33
+        ADB_INSTALL_TIMEOUT=8
     }
 
     parameters {
