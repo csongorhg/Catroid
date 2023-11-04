@@ -18,8 +18,9 @@ def startEmulator(String android_version) {
     // creates a new avd, and if it already exists it does nothing.
     sh "echo no | avdmanager create avd --name android${android_version} --package " +
             "'system-images;android-${android_version};google_apis;x86_64' || true"
-    sh "/home/user/android/sdk/emulator/emulator -wipe-data -no-window -no-boot-anim -noaudio " +
-            "-no-snapshot-save -gpu swiftshader_indirect" +
+    sh "/home/user/android/sdk/emulator/emulator -wipe-data -no-window -no-boot-anim -no-audio" +
+            " -no-snapshot-save -gpu swiftshader_indirect" +
+            " -camera-back emulated -camera-front emulated -memory 4096" +
             " -avd android${android_version} &"
 
     sh "timeout 5m adb wait-for-device"
@@ -31,9 +32,7 @@ echo "Emulator started"
 }
 
 def runTestsWithEmulator(String testClass) {
-    sh " ./gradlew -PenableCoverage \
-        createCatroidDebugAndroidTestCoverageReport \
-        -Pandroid.testInstrumentationRunnerArguments.class=${testClass} "
+    sh " ./gradlew -PenableCoverage createCatroidDebugAndroidTestCoverageReport -Pandroid.testInstrumentationRunnerArguments.class=${testClass} "
 }
 
 def postEmulator(String coverageNameAndLogcatPrefix) {
