@@ -342,8 +342,12 @@ android {
     productFlavors.all { flavor ->
         copyGoogleServicesFile(flavor.name, defaultConfig.applicationId + (flavor.applicationIdSuffix ?: ""))
     }
-
+    adbOptions {
+        timeOutInMs 600000 // set timeout to 10 minutes
+    }
 }
+
+com.android.ddmlib.DdmPreferences.setTimeOut(600000)
 
 configurations {
     implementation.exclude group: 'xpp3' //compile problem with xstream
