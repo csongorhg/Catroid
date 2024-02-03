@@ -454,6 +454,9 @@ public class FormulaElement implements Serializable {
 		switch (function) {
 			case LETTER:
 				return interpretFunctionLetter(arguments.get(0), arguments.get(1));
+			case SUBTEXT:
+				return interpretFunctionSubtext(arguments.get(0), arguments.get(1),
+						arguments.get(2));
 			case LENGTH:
 				return interpretFunctionLength(arguments.get(0), scope);
 			case JOIN:
@@ -681,7 +684,9 @@ public class FormulaElement implements Serializable {
 		if (userVariableValue instanceof String) {
 			return String.valueOf(userVariableValue).length();
 		} else {
-			if (isInteger((Double) userVariableValue)) {
+			if (userVariableValue.toString().equals("true") || userVariableValue.toString().equals("false")) {
+				return 1;
+			} else if (isInteger((Double) userVariableValue)) {
 				return Integer.toString(((Double) userVariableValue).intValue()).length();
 			} else {
 				return Double.toString(((Double) userVariableValue)).length();
@@ -723,6 +728,23 @@ public class FormulaElement implements Serializable {
 			return "";
 		}
 		return String.valueOf(stringValueOfRight.charAt(index));
+	}
+
+	private Object interpretFunctionSubtext(Object leftChild,
+			Object rightChild, Object string) {
+		if (leftChild == null || rightChild == null) {
+			return "";
+		}
+
+		int start = tryParseIntFromObject(leftChild) - 1;
+		int end = tryParseIntFromObject(rightChild);
+		String stringValueOfString = String.valueOf(string);
+
+		if (start < 0 || end < 0 || start > end || end > stringValueOfString.length()) {
+			return "";
+		}
+
+		return stringValueOfString.substring(start, end);
 	}
 
 	private double interpretFunctionRand(double from, double to) {

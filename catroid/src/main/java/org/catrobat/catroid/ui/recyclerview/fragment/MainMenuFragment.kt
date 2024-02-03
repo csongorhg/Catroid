@@ -33,6 +33,9 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearSnapHelper
 import androidx.recyclerview.widget.PagerSnapHelper
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.catrobat.catroid.ProjectManager
 import org.catrobat.catroid.R
 import org.catrobat.catroid.common.Constants
@@ -49,6 +52,7 @@ import org.catrobat.catroid.ui.ProjectActivity
 import org.catrobat.catroid.ui.ProjectListActivity
 import org.catrobat.catroid.ui.ProjectUploadActivity
 import org.catrobat.catroid.ui.WebViewActivity
+import org.catrobat.catroid.ui.dialogs.NewProjectDialogFragment
 import org.catrobat.catroid.ui.recyclerview.CategoryTitleCallback
 import org.catrobat.catroid.ui.recyclerview.FeaturedProjectCallback
 import org.catrobat.catroid.ui.recyclerview.IndicatorDecoration
@@ -56,7 +60,6 @@ import org.catrobat.catroid.ui.recyclerview.ProjectListener
 import org.catrobat.catroid.ui.recyclerview.adapter.CategoriesAdapter
 import org.catrobat.catroid.ui.recyclerview.adapter.FeaturedProjectsAdapter
 import org.catrobat.catroid.ui.recyclerview.adapter.HorizontalProjectsAdapter
-import org.catrobat.catroid.ui.recyclerview.dialog.NewProjectDialogFragment
 import org.catrobat.catroid.ui.recyclerview.viewmodel.MainFragmentViewModel
 import org.catrobat.catroid.utils.FileMetaDataExtractor
 import org.catrobat.catroid.utils.ProjectDownloadUtil.setFragment
@@ -214,7 +217,12 @@ class MainMenuFragment : Fragment(),
             DEFAULT_ROOT_DIRECTORY,
             FileMetaDataExtractor.encodeSpecialCharsForFileSystem(currentProject)
         )
-        loadProject(projectDir, requireContext())
+        CoroutineScope(Dispatchers.IO).launch {
+            // CATROID-1434 Caution
+            // running loadProject on main thread may cause ANR due to locking in
+            // XstreamSerializer
+            loadProject(projectDir, requireContext())
+        }
         loadProjectImage()
     }
 
@@ -294,8 +302,10 @@ class MainMenuFragment : Fragment(),
                     .loadProjectAsync()
             }
 
-            R.id.newProjectFloatingActionButton ->
-                NewProjectDialogFragment().show(parentFragmentManager, NewProjectDialogFragment.TAG)
+            R.id.newProjectFloatingActionButton -> {
+                val dialog = NewProjectDialogFragment()
+                dialog.show(parentFragmentManager, NewProjectDialogFragment.TAG)
+            }
 
             R.id.uploadProject -> {
                 if (Utils.isDefaultProject(projectManager.currentProject, activity)) {
@@ -348,8 +358,8 @@ class MainMenuFragment : Fragment(),
     }
 
     companion object {
+        val TAG: String = MainMenuFragment::class.java.simpleName
         private const val CURRENT_THUMBNAIL_SIZE = 500
-        val TAG = MainMenuFragment::class.java.simpleName
         private const val MAX_PROJECTS_NUMBER = 10
     }
 }

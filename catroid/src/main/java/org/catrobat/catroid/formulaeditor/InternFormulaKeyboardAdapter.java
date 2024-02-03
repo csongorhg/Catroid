@@ -160,6 +160,9 @@ public class InternFormulaKeyboardAdapter {
 			case R.string.formula_editor_function_letter:
 				return buildDoubleParameterFunction(Functions.LETTER, NUMBER, "1",
 						STRING, "hello world");
+			case R.string.formula_editor_function_subtext:
+				return buildTripleParameterFunction(Functions.SUBTEXT, NUMBER, "3", NUMBER, "5",
+						STRING, "hello world");
 			case R.string.formula_editor_function_length:
 				return buildSingleParameterFunction(Functions.LENGTH, STRING, "hello world");
 			case R.string.formula_editor_function_number_of_items:
@@ -586,6 +589,10 @@ public class InternFormulaKeyboardAdapter {
 				return buildDoubleParameterFunction(Functions.COLOR_TOUCHES_COLOR, STRING, "#ff0000", STRING, "#ff0000");
 			case R.string.formula_editor_listening_language_sensor:
 				return buildSensor(Sensors.SPEECH_RECOGNITION_LANGUAGE);
+			case R.string.formula_editor_sensor_stage_width:
+				return buildSensor(Sensors.STAGE_WIDTH);
+			case R.string.formula_editor_sensor_stage_height:
+				return buildSensor(Sensors.STAGE_HEIGHT);
 
 			case R.string.formula_editor_function_get_id_of_detected_object:
 				return buildSingleParameterFunction(Functions.ID_OF_DETECTED_OBJECT, NUMBER, "1");

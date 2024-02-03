@@ -1,6 +1,6 @@
 /*
  * Catroid: An on-device visual programming system for Android devices
- * Copyright (C) 2010-2022 The Catrobat Team
+ * Copyright (C) 2010-2023 The Catrobat Team
  * (<http://developer.catrobat.org/credits>)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -37,6 +37,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.VisibleForTesting
 import androidx.fragment.app.Fragment
 import androidx.webkit.WebViewAssetLoader
 import com.google.gson.Gson
@@ -67,6 +68,8 @@ class CatblocksScriptFragment(
 
     companion object {
         val TAG: String = CatblocksScriptFragment::class.java.simpleName
+        @VisibleForTesting
+        var testingMode = false
     }
 
     private val projectManager = inject(ProjectManager::class.java).value
@@ -98,19 +101,22 @@ class CatblocksScriptFragment(
     ): View? {
         BottomBar.showBottomBar(activity)
 
-        setHasOptionsMenu(true)
+        if (BuildConfig.FEATURE_AI_ASSIST_ENABLED) {
+            BottomBar.showAiAssistButton(activity)
+        }
 
+        setHasOptionsMenu(true)
         val view = View.inflate(activity, R.layout.fragment_catblocks, null)
         val webView = view.findViewById<WebView>(R.id.catblocksWebView)
         initWebView(webView)
         this.webview = webView
+
         return view
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun initWebView(catblocksWebView: WebView) {
         catblocksWebView.settings.javaScriptEnabled = true
-
         if (BuildConfig.FEATURE_CATBLOCKS_DEBUGABLE) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
@@ -131,8 +137,58 @@ class CatblocksScriptFragment(
             ): WebResourceResponse? {
                 return assetLoader.shouldInterceptRequest(request.url)
             }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+
+                if (testingMode) {
+                    view?.evaluateJavascript("""
+                        javascript:(function(){
+                            console.log("Load webViewUtilsFunctions.js");
+                            const scriptElement = document.createElement("script");
+                            scriptElement.src = "https://appassets.androidplatform.net/assets/catblocks/webViewUtilsFunctions.js";
+                            document.head.appendChild(scriptElement);
+                        })()
+                    """.trimIndent(), null)
+                }
+
+                view?.evaluateJavascript(
+                    """javascript:(async function(){
+                        await CatBlocks.init({
+                           container: 'catroid-catblocks-container',
+                           renderSize: 0.75,
+                           language: Android.getCurrentLanguage(),
+                           rtl: Android.isRTL(),
+                           shareRoot: 'https://appassets.androidplatform.net/assets/catblocks',
+                           media: 'https://appassets.androidplatform.net/assets/catblocks/media',
+                           i18n: 'https://appassets.androidplatform.net/assets/catblocks/i18n',
+                           noImageFound: 'No_Image_Available.jpg',
+                           renderLooks: false,
+                           renderSounds: false,
+                           readOnly: false
+                        });
+                        
+                        const programXML = Android.getCurrentProject();
+                        const scene = Android.getSceneNameToDisplay();
+                        const object = Android.getSpriteNameToDisplay();
+                        CatBlocks.render(programXML, scene, object);
+                        ${
+                            if (testingMode) {
+                                "if (window.webViewUtils) window.webViewUtils" +
+                                    ".onPageLoaded();"
+                            } else {
+                                ""
+                            }
+                        }
+                    })()
+                """.trimMargin(), null
+                )
+            }
         }
-        catblocksWebView.loadUrl("https://appassets.androidplatform.net/assets/catblocks/index.html")
+
+        if (!testingMode) {
+            catblocksWebView.loadUrl("https://appassets.androidplatform.net/assets/catblocks/index.html")
+        }
     }
 
     inner class SwitchTo1DHelper : Runnable, ValueCallback<String> {
@@ -140,7 +196,6 @@ class CatblocksScriptFragment(
 
         override fun run() {
             SettingsFragment.setUseCatBlocks(context, false)
-
             val scriptFragment: ScriptFragment = if (brickToFocus == null) {
                 ScriptFragment()
             } else if (brickToFocus is ScriptBrick) {
@@ -148,7 +203,6 @@ class CatblocksScriptFragment(
             } else {
                 ScriptFragment.newInstance(brickToFocus)
             }
-
             val fragmentTransaction = parentFragmentManager.beginTransaction()
             fragmentTransaction.replace(
                 R.id.fragment_container, scriptFragment,
@@ -183,8 +237,7 @@ class CatblocksScriptFragment(
         }
 
         @JavascriptInterface
-        fun getCurrentLanguage(): String =
-            Locale.getDefault().toString().replace("_", "-")
+        fun getCurrentLanguage(): String = Locale.getDefault().toString().replace("_", "-")
 
         @JavascriptInterface
         fun isRTL(): Boolean {
@@ -204,7 +257,7 @@ class CatblocksScriptFragment(
             if (brickAtTopID != null) {
                 return brickAtTopID.toString()
             } else {
-                if (projectManager?.currentSprite?.scriptList != null &&
+                if (projectManager.currentSprite?.scriptList != null &&
                     projectManager.currentSprite.scriptList.any()) {
                         return projectManager.currentSprite.scriptList[0].scriptId.toString()
                 }

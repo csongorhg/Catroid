@@ -1,6 +1,6 @@
 /*
  * Catroid: An on-device visual programming system for Android devices
- * Copyright (C) 2010-2022 The Catrobat Team
+ * Copyright (C) 2010-2023 The Catrobat Team
  * (<http://developer.catrobat.org/credits>)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -41,25 +41,23 @@ import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.uiautomator.UiDevice
-import org.catrobat.catroid.ProjectManager
 import org.catrobat.catroid.R
 import org.catrobat.catroid.common.Constants.UPLOAD_RESULT_RECEIVER_RESULT_CODE
 import org.catrobat.catroid.content.Project
 import org.catrobat.catroid.content.Scene
-import org.catrobat.catroid.content.Script
-import org.catrobat.catroid.content.Sprite
-import org.catrobat.catroid.content.StartScript
 import org.catrobat.catroid.io.asynctask.saveProjectSerial
 import org.catrobat.catroid.ui.NUMBER_OF_UPLOADED_PROJECTS
 import org.catrobat.catroid.ui.PROJECT_DIR
 import org.catrobat.catroid.ui.ProjectUploadActivity
 import org.catrobat.catroid.ui.controller.ProjectUploadController
+import org.catrobat.catroid.uiespresso.util.UiTestUtils
 import org.catrobat.catroid.uiespresso.util.rules.BaseActivityTestRule
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 
@@ -80,13 +78,8 @@ class ProjectUploadDialogTest {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
         bundle = Bundle()
 
-        project = Project(getApplicationContext(), projectName, false)
+        project = UiTestUtils.createDefaultTestProject(projectName)
         val firstScene = Scene("scene", project)
-        ProjectManager.getInstance().currentProject = project
-        val firstSprite = Sprite("firstSprite")
-        val firstScript: Script = StartScript()
-        firstSprite.addScript(firstScript)
-        firstScene.addSprite(firstSprite)
         project.addScene(firstScene)
         saveProjectSerial(project, getApplicationContext())
         val intent = Intent()
@@ -100,22 +93,16 @@ class ProjectUploadDialogTest {
             .putInt(NUMBER_OF_UPLOADED_PROJECTS, 1)
             .commit()
 
-        onView(withText(R.string.next))
-            .perform(click())
+        onView(withText(R.string.next)).perform(click())
         getInstrumentation().waitForIdleSync()
-
-        onView(withText(R.string.next))
-            .perform(click())
+        onView(withText(R.string.next)).perform(click())
         getInstrumentation().waitForIdleSync()
-
-        onView(withText(R.string.next))
-            .perform(click())
-
+        onView(withId(android.R.id.button1)).perform(click())
         val projectUploadController = activityTestRule.activity.projectUploadController()
 
-        Looper.prepare()
-        verify(projectUploadController)?.startUpload(projectName, "", "", project)
         Looper.myLooper()?.quit()
+        verify(projectUploadController!!).startUpload(projectName, "", "", project)
+        Mockito.verifyNoMoreInteractions(projectUploadController)
     }
 
     @Test
